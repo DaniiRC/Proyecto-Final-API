@@ -103,7 +103,15 @@ public class GrupoController {
 	}
 
 	// ==========================================
-	// 5. SUBIR FOTO DEL GRUPO (TU CÓDIGO ORIGINAL)
+	// 5. BUSCAR GRUPO POR CÓDIGO (NUEVO)
+	// ==========================================
+	@GetMapping("/codigo/{codigo}")
+	public ResponseEntity<Grupo> buscarPorCodigo(@PathVariable String codigo) {
+		return grupoRepository.findByCodigo(codigo).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+	}
+
+	// ==========================================
+	// 6. SUBIR FOTO DEL GRUPO (TU CÓDIGO ORIGINAL)
 	// ==========================================
 	@PostMapping("/{id}/foto")
 	public ResponseEntity<Grupo> subirFoto(@PathVariable Long id, @RequestParam("foto") MultipartFile foto) {
@@ -133,7 +141,7 @@ public class GrupoController {
 	}
 	
 	// ==========================================
-    // 6. OBTENER LAS CLASES DE UN ALUMNO
+    // 7. OBTENER LAS CLASES DE UN ALUMNO
     // ==========================================
     @GetMapping("/usuario/{usuarioId}")
     public ResponseEntity<List<Grupo>> obtenerGruposDeUsuario(@PathVariable Long usuarioId) {
