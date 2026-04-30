@@ -39,7 +39,7 @@ public class Grupo {
 	// Muchos usuarios pueden estar en muchos grupos
 	@ManyToMany
 	@JoinTable(name = "grupo_alumnos", joinColumns = @JoinColumn(name = "grupo_id"), inverseJoinColumns = @JoinColumn(name = "usuario_id"))
-	private List<Usuario> alumnos;
+	private List<Usuario> alumnos = new ArrayList<>();
 
 	// Constructor vacío obligatorio para Spring Boot
 	public Grupo() {

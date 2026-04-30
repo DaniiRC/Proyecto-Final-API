@@ -24,7 +24,8 @@ public class Evento {
 	@Column(nullable = false)
 	private LocalDate fecha;
 
-	private LocalTime hora;
+	@Column(length = 20)
+	private String hora;
 
 	@Column(length = 50)
 	private String tipo; // Ej: 'Examen', 'Tarea', 'Proyecto'
@@ -103,11 +104,11 @@ public class Evento {
 		this.fecha = fecha;
 	}
 
-	public LocalTime getHora() {
+	public String getHora() {
 		return hora;
 	}
 
-	public void setHora(LocalTime hora) {
+	public void setHora(String hora) {
 		this.hora = hora;
 	}
 
