@@ -1,26 +1,27 @@
 package com.agenda.backend_academico.controller;
 
+import com.agenda.backend_academico.model.LoginResponseDTO;
 import com.agenda.backend_academico.model.Usuario;
 import com.agenda.backend_academico.model.Evento;
 import com.agenda.backend_academico.model.Grupo;
 import com.agenda.backend_academico.repository.UsuarioRepository;
 import com.agenda.backend_academico.repository.EventoRepository;
 import com.agenda.backend_academico.repository.GrupoRepository;
+import com.agenda.backend_academico.security.JwtUtils;
+import com.agenda.backend_academico.service.CodigoVerificacionService;
 import com.agenda.backend_academico.service.FileStorageService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.SimpleMailMessage;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Random;
 import java.util.Set;
 import java.util.HashSet;
 
@@ -37,23 +38,36 @@ public class UsuarioController {
 
     @Autowired
     private GrupoRepository grupoRepository;
-    
+
     @Autowired
     private FileStorageService fileStorageService;
 
     @Autowired
     private JavaMailSender mailSender;
 
-    // Mapa temporal para guardar códigos de verificación (Email -> Código)
-    // En producción esto debería ir a una base de datos con expiración
-    private static final Map<String, String> codigosVerificacion = new HashMap<>();
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtUtils jwtUtils;
+
+    @Autowired
+    private CodigoVerificacionService codigoVerificacionService;
 
     // LOGIN
     @PostMapping("/login")
-    public ResponseEntity<Usuario> login(@RequestBody Usuario credenciales) {
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody Usuario credenciales) {
         Usuario usuario = usuarioRepository.findByEmail(credenciales.getEmail());
-        if (usuario != null && usuario.getPassword().equals(credenciales.getPassword())) {
-            return ResponseEntity.ok(usuario);
+        if (usuario != null && passwordEncoder.matches(credenciales.getPassword(), usuario.getPassword())) {
+            String token = jwtUtils.generateToken(usuario.getEmail());
+            LoginResponseDTO dto = new LoginResponseDTO(
+                    token,
+                    usuario.getId(),
+                    usuario.getNombre(),
+                    usuario.getEmail(),
+                    usuario.getFotoUrl()
+            );
+            return ResponseEntity.ok(dto);
         } else {
             return ResponseEntity.status(401).build();
         }
@@ -61,12 +75,22 @@ public class UsuarioController {
 
     // REGISTRO
     @PostMapping("/registro")
-    public ResponseEntity<Usuario> registrar(@RequestBody Usuario usuario) {
+    public ResponseEntity<LoginResponseDTO> registrar(@RequestBody Usuario usuario) {
         if (usuarioRepository.findByEmail(usuario.getEmail()) != null) {
             return ResponseEntity.badRequest().build();
         }
+        // Hashear la contraseña antes de persistir
+        usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
         Usuario nuevoUsuario = usuarioRepository.save(usuario);
-        return ResponseEntity.ok(nuevoUsuario);
+        String token = jwtUtils.generateToken(nuevoUsuario.getEmail());
+        LoginResponseDTO dto = new LoginResponseDTO(
+                token,
+                nuevoUsuario.getId(),
+                nuevoUsuario.getNombre(),
+                nuevoUsuario.getEmail(),
+                nuevoUsuario.getFotoUrl()
+        );
+        return ResponseEntity.ok(dto);
     }
     
     @PostMapping("/{id}/foto")
@@ -85,7 +109,7 @@ public class UsuarioController {
 
     // LOGIN CON GOOGLE
     @PostMapping("/google-login")
-    public ResponseEntity<Usuario> googleLogin(@RequestBody Map<String, String> datos) {
+    public ResponseEntity<LoginResponseDTO> googleLogin(@RequestBody Map<String, String> datos) {
         String email = datos.get("email");
         String nombre = datos.get("nombre");
         String fotoUrl = datos.get("fotoUrl");
@@ -100,6 +124,7 @@ public class UsuarioController {
             usuario.setNombre(nombre);
             usuario.setEmail(email);
             usuario.setFotoUrl(fotoUrl);
+            // Usuarios de Google no tienen contraseña local; guardamos string vacío
             usuario.setPassword("");
             usuario = usuarioRepository.save(usuario);
         } else if (fotoUrl != null && (usuario.getFotoUrl() == null || usuario.getFotoUrl().startsWith("http"))) {
@@ -107,7 +132,15 @@ public class UsuarioController {
             usuario = usuarioRepository.save(usuario);
         }
 
-        return ResponseEntity.ok(usuario);
+        String token = jwtUtils.generateToken(usuario.getEmail());
+        LoginResponseDTO dto = new LoginResponseDTO(
+                token,
+                usuario.getId(),
+                usuario.getNombre(),
+                usuario.getEmail(),
+                usuario.getFotoUrl()
+        );
+        return ResponseEntity.ok(dto);
     }
 
     // RECUPERAR CONTRASEÑA - PASO 1: ENVIAR CÓDIGO
@@ -117,9 +150,7 @@ public class UsuarioController {
         
         if (usuario != null) {
             try {
-                // Generar código de 6 dígitos
-                String codigo = String.format("%06d", new Random().nextInt(999999));
-                codigosVerificacion.put(email, codigo);
+                String codigo = codigoVerificacionService.guardarCodigo(email);
 
                 SimpleMailMessage message = new SimpleMailMessage();
                 message.setFrom("ruizcocera.daniel@loscerros.org");
@@ -142,22 +173,22 @@ public class UsuarioController {
     // RECUPERAR CONTRASEÑA - PASO 2: VERIFICAR CÓDIGO Y CAMBIAR PASS
     @PostMapping("/verificar-y-cambiar")
     public ResponseEntity<Void> verificarYCambiar(
-            @RequestParam String email, 
-            @RequestParam String codigo, 
+            @RequestParam String email,
+            @RequestParam String codigo,
             @RequestParam String nuevaPassword) {
-        
-        String codigoGuardado = codigosVerificacion.get(email);
-        
-        if (codigoGuardado != null && codigoGuardado.equals(codigo)) {
+
+        boolean esValido = codigoVerificacionService.verificarCodigo(email, codigo);
+
+        if (esValido) {
             Usuario usuario = usuarioRepository.findByEmail(email);
             if (usuario != null) {
-                usuario.setPassword(nuevaPassword);
+                // Hashear la nueva contraseña antes de guardarla
+                usuario.setPassword(passwordEncoder.encode(nuevaPassword));
                 usuarioRepository.save(usuario);
-                codigosVerificacion.remove(email); // Limpiar código usado
                 return ResponseEntity.ok().build();
             }
         }
-        
+
         return ResponseEntity.status(401).build(); // Código incorrecto o expirado
     }
 
