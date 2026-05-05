@@ -6,6 +6,10 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.UUID;
 
+/**
+ * Servicio encargado de gestionar el almacenamiento físico de los archivos subidos al servidor.
+ * Administra el guardado de imágenes en el directorio local.
+ */
 @Service
 public class FileStorageService {
 

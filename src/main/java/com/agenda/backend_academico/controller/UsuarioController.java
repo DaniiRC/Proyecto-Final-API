@@ -25,6 +25,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
 
+/**
+ * Controlador REST que gestiona las operaciones relacionadas con los usuarios.
+ * Incluye autenticación, registro, recuperación de contraseña y gestión de cuentas.
+ */
 @RestController
 @RequestMapping("/api/usuarios")
 @CrossOrigin(origins = "*")
@@ -54,7 +58,13 @@ public class UsuarioController {
     @Autowired
     private CodigoVerificacionService codigoVerificacionService;
 
-    // LOGIN
+    /**
+     * Autentica a un usuario mediante correo electrónico y contraseña.
+     * Genera y devuelve un token JWT si las credenciales son válidas.
+     *
+     * @param credenciales Objeto Usuario que contiene el email y la contraseña.
+     * @return ResponseEntity con LoginResponseDTO y estado 200 si es exitoso, o estado 401 si falla.
+     */
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody Usuario credenciales) {
         Usuario usuario = usuarioRepository.findByEmail(credenciales.getEmail());
@@ -73,7 +83,13 @@ public class UsuarioController {
         }
     }
 
-    // REGISTRO
+    /**
+     * Registra un nuevo usuario en el sistema.
+     * Encripta la contraseña con BCrypt antes de persistirla en la base de datos.
+     *
+     * @param usuario Datos del nuevo usuario a registrar.
+     * @return ResponseEntity con LoginResponseDTO (incluye token) si es exitoso, o 400 si el email ya existe.
+     */
     @PostMapping("/registro")
     public ResponseEntity<LoginResponseDTO> registrar(@RequestBody Usuario usuario) {
         if (usuarioRepository.findByEmail(usuario.getEmail()) != null) {
@@ -93,6 +109,13 @@ public class UsuarioController {
         return ResponseEntity.ok(dto);
     }
     
+    /**
+     * Sube y actualiza la foto de perfil de un usuario específico.
+     *
+     * @param id Identificador único del usuario.
+     * @param file Archivo de imagen multiparte.
+     * @return ResponseEntity con la entidad Usuario actualizada.
+     */
     @PostMapping("/{id}/foto")
     public ResponseEntity<Usuario> subirFoto(@PathVariable Long id, @RequestParam("foto") MultipartFile file) {
         Usuario usuario = usuarioRepository.findById(id)
@@ -107,7 +130,13 @@ public class UsuarioController {
         return ResponseEntity.ok(usuario);
     }
 
-    // LOGIN CON GOOGLE
+    /**
+     * Autentica o registra a un usuario utilizando la integración con Google Sign-In.
+     * Si el usuario no existe en la base de datos local, lo crea automáticamente.
+     *
+     * @param datos Mapa con la información proporcionada por Google (email, nombre, fotoUrl).
+     * @return ResponseEntity con LoginResponseDTO incluyendo el token JWT del sistema.
+     */
     @PostMapping("/google-login")
     public ResponseEntity<LoginResponseDTO> googleLogin(@RequestBody Map<String, String> datos) {
         String email = datos.get("email");
@@ -143,7 +172,12 @@ public class UsuarioController {
         return ResponseEntity.ok(dto);
     }
 
-    // RECUPERAR CONTRASEÑA - PASO 1: ENVIAR CÓDIGO
+    /**
+     * Fase 1 de recuperación de contraseña: Envía un código OTP al correo electrónico asociado.
+     *
+     * @param email Correo electrónico del usuario que solicita la recuperación.
+     * @return ResponseEntity 200 OK si el correo se envía correctamente, o 404 si el usuario no existe.
+     */
     @PostMapping("/enviar-codigo")
     public ResponseEntity<Void> enviarCodigo(@RequestParam String email) {
         Usuario usuario = usuarioRepository.findByEmail(email);
@@ -170,7 +204,14 @@ public class UsuarioController {
         return ResponseEntity.notFound().build();
     }
 
-    // RECUPERAR CONTRASEÑA - PASO 2: VERIFICAR CÓDIGO Y CAMBIAR PASS
+    /**
+     * Fase 2 de recuperación de contraseña: Verifica el código OTP y actualiza la contraseña.
+     *
+     * @param email Correo electrónico del usuario.
+     * @param codigo Código de verificación temporal de 6 dígitos.
+     * @param nuevaPassword Nueva contraseña en texto plano (será encriptada internamente).
+     * @return ResponseEntity 200 OK si el cambio es exitoso, o 401 si el código es inválido o ha expirado.
+     */
     @PostMapping("/verificar-y-cambiar")
     public ResponseEntity<Void> verificarYCambiar(
             @RequestParam String email,
@@ -192,7 +233,13 @@ public class UsuarioController {
         return ResponseEntity.status(401).build(); // Código incorrecto o expirado
     }
 
-    // ELIMINAR CUENTA PERMANENTEMENTE
+    /**
+     * Elimina permanentemente la cuenta de un usuario y gestiona el borrado en cascada.
+     * Resuelve dependencias de grupos (profesor/alumno) y elimina eventos personales huérfanos.
+     *
+     * @param id Identificador único del usuario a eliminar.
+     * @return ResponseEntity 204 No Content si la eliminación es exitosa, o 500 en caso de error interno.
+     */
     @PostMapping("/{id}/eliminar")
     @Transactional
     public ResponseEntity<?> eliminarUsuario(@PathVariable("id") Long id) {

@@ -12,15 +12,24 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
+/**
+ * Servicio encargado de la lógica de recuperación de contraseñas.
+ * Gestiona la generación, invalidación y verificación de códigos OTP temporales.
+ */
 @Service
 public class CodigoVerificacionService {
 
     @Autowired
     private CodigoVerificacionRepository codigoVerificacionRepository;
 
+    /**
+     * Genera un nuevo código OTP, invalidando cualquier código anterior asociado al mismo email.
+     *
+     * @param email Correo del usuario que solicita la recuperación.
+     * @return El código numérico generado.
+     */
     @Transactional
     public String guardarCodigo(String email) {
-        // Invalidar códigos anteriores del mismo email (marcarlos como usados)
         List<CodigoVerificacion> codigosAnteriores = codigoVerificacionRepository.findByEmailAndUsadoFalse(email);
         for (CodigoVerificacion cod : codigosAnteriores) {
             cod.setUsado(true);
@@ -37,6 +46,13 @@ public class CodigoVerificacionService {
         return codigo;
     }
 
+    /**
+     * Verifica la validez temporal y exactitud de un código OTP asociado a un email.
+     *
+     * @param email Correo del usuario.
+     * @param codigo Código proporcionado por el usuario.
+     * @return true si es válido y no está caducado, false en caso contrario.
+     */
     @Transactional
     public boolean verificarCodigo(String email, String codigo) {
         Optional<CodigoVerificacion> optCodigo = codigoVerificacionRepository.findByEmailAndCodigoAndUsadoFalse(email, codigo);
