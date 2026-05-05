@@ -15,6 +15,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Servicio central para la lógica de negocio de los eventos y tareas.
+ * Se encarga de coordinar la creación, actualización y unificación de agendas (personales y grupales).
+ */
 @Service
 public class EventoService {
 
@@ -30,6 +34,13 @@ public class EventoService {
     @Autowired
     private AsignaturaRepository asignaturaRepository;
 
+    /**
+     * Obtiene y unifica todos los eventos a los que tiene acceso un usuario.
+     * Incluye eventos creados por él mismo y eventos vinculados a los grupos en los que participa.
+     *
+     * @param usuarioId ID del usuario.
+     * @return Lista de EventoResponseDTO con la información consolidada.
+     */
     public List<EventoResponseDTO> obtenerEventosUnificados(Long usuarioId) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
@@ -65,6 +76,13 @@ public class EventoService {
         return mapToResponseDTO(evento);
     }
 
+    /**
+     * Crea un nuevo evento, aplicando las validaciones de negocio correspondientes,
+     * vinculando al creador y, opcionalmente, a un grupo o asignatura.
+     *
+     * @param dto Datos del evento provenientes de la petición web.
+     * @return EventoResponseDTO con el evento recién persistido.
+     */
     @Transactional
     public EventoResponseDTO crearEvento(EventoRequestDTO dto) {
         Evento evento = new Evento();

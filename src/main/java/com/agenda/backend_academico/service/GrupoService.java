@@ -19,6 +19,10 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Servicio central para la gestión de la lógica de negocio de los grupos o clases.
+ * Maneja las uniones, salidas y carga de perfiles de grupos.
+ */
 @Service
 public class GrupoService {
 
@@ -28,6 +32,12 @@ public class GrupoService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    /**
+     * Crea un nuevo grupo asociado al profesor que lo solicita.
+     *
+     * @param dto Datos del grupo (nombre, descripción, profesorId).
+     * @return GrupoResponseDTO con el grupo recién guardado en base de datos.
+     */
     @Transactional
     public GrupoResponseDTO crearGrupo(GrupoRequestDTO dto) {
         Usuario profesor = usuarioRepository.findById(dto.getProfesorId())
@@ -43,6 +53,13 @@ public class GrupoService {
         return mapToResponseDTO(grupoGuardado);
     }
 
+    /**
+     * Une a un usuario alumno a un grupo utilizando un código de invitación.
+     *
+     * @param codigo Código alfanumérico generado por el sistema.
+     * @param usuarioId ID del alumno.
+     * @return GrupoResponseDTO con los datos actualizados del grupo.
+     */
     @Transactional
     public GrupoResponseDTO unirseAGrupo(String codigo, Long usuarioId) {
         Grupo grupo = grupoRepository.findByCodigo(codigo)
@@ -62,6 +79,13 @@ public class GrupoService {
         return mapToResponseDTO(grupo);
     }
 
+    /**
+     * Elimina a un usuario de la lista de participantes de un grupo.
+     * Sirve tanto para alumnos que se marchan voluntariamente, como para expulsiones del profesor.
+     *
+     * @param grupoId ID del grupo académico.
+     * @param usuarioId ID del alumno a eliminar.
+     */
     @Transactional
     public void salirDeGrupo(Long grupoId, Long usuarioId) {
         Grupo grupo = grupoRepository.findById(grupoId)
@@ -106,6 +130,14 @@ public class GrupoService {
         return mapToResponseDTO(grupo);
     }
 
+    /**
+     * Sube y persiste la imagen de portada de un grupo en el sistema de archivos local.
+     *
+     * @param id ID del grupo.
+     * @param foto Objeto MultipartFile de la imagen subida.
+     * @return GrupoResponseDTO con la nueva URL de la imagen.
+     * @throws IOException Si ocurre un error escribiendo el archivo a disco.
+     */
     @Transactional
     public GrupoResponseDTO subirFotoGrupo(Long id, MultipartFile foto) throws IOException {
         Grupo grupo = grupoRepository.findById(id)
