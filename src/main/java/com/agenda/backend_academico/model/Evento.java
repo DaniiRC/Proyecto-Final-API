@@ -44,6 +44,9 @@ public class Evento {
 
 	private boolean completado;
 
+	@Column(name = "nota_obtenida")
+	private Double notaObtenida;
+
 	@ElementCollection
 	private List<String> recursosUrls = new ArrayList<>();
 
@@ -211,6 +214,14 @@ public class Evento {
 
 	public void setCompletado(boolean completado) {
 		this.completado = completado;
+	}
+
+	public Double getNotaObtenida() {
+		return notaObtenida;
+	}
+
+	public void setNotaObtenida(Double notaObtenida) {
+		this.notaObtenida = notaObtenida;
 	}
 
 	// Método auxiliar para añadir una subtarea bidireccionalmente

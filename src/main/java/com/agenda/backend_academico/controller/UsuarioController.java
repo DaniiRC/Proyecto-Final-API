@@ -131,48 +131,6 @@ public class UsuarioController {
     }
 
     /**
-     * Autentica o registra a un usuario utilizando la integración con Google Sign-In.
-     * Si el usuario no existe en la base de datos local, lo crea automáticamente.
-     *
-     * @param datos Mapa con la información proporcionada por Google (email, nombre, fotoUrl).
-     * @return ResponseEntity con LoginResponseDTO incluyendo el token JWT del sistema.
-     */
-    @PostMapping("/google-login")
-    public ResponseEntity<LoginResponseDTO> googleLogin(@RequestBody Map<String, String> datos) {
-        String email = datos.get("email");
-        String nombre = datos.get("nombre");
-        String fotoUrl = datos.get("fotoUrl");
-
-        if (email == null || email.isBlank()) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        Usuario usuario = usuarioRepository.findByEmail(email);
-        if (usuario == null) {
-            usuario = new Usuario();
-            usuario.setNombre(nombre);
-            usuario.setEmail(email);
-            usuario.setFotoUrl(fotoUrl);
-            // Usuarios de Google no tienen contraseña local; guardamos string vacío
-            usuario.setPassword("");
-            usuario = usuarioRepository.save(usuario);
-        } else if (fotoUrl != null && (usuario.getFotoUrl() == null || usuario.getFotoUrl().startsWith("http"))) {
-            usuario.setFotoUrl(fotoUrl);
-            usuario = usuarioRepository.save(usuario);
-        }
-
-        String token = jwtUtils.generateToken(usuario.getEmail());
-        LoginResponseDTO dto = new LoginResponseDTO(
-                token,
-                usuario.getId(),
-                usuario.getNombre(),
-                usuario.getEmail(),
-                usuario.getFotoUrl()
-        );
-        return ResponseEntity.ok(dto);
-    }
-
-    /**
      * Fase 1 de recuperación de contraseña: Envía un código OTP al correo electrónico asociado.
      *
      * @param email Correo electrónico del usuario que solicita la recuperación.

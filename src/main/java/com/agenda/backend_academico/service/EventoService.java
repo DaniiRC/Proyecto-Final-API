@@ -95,6 +95,7 @@ public class EventoService {
         evento.setDificultad(dto.getDificultad());
         evento.setHorasEstimadas(dto.getHorasEstimadas());
         evento.setFocusMode(dto.isFocusMode());
+        evento.setNotaObtenida(dto.getNotaObtenida());
         evento.setRecursosUrls(dto.getRecursosUrls());
 
         Usuario creador = usuarioRepository.findById(dto.getCreadorId())
@@ -145,6 +146,7 @@ public class EventoService {
         eventoExistente.setFecha(eventoActualizado.getFecha());
         eventoExistente.setTipo(eventoActualizado.getTipo());
         eventoExistente.setFocusMode(eventoActualizado.isFocusMode());
+        eventoExistente.setNotaObtenida(eventoActualizado.getNotaObtenida());
 
         if (eventoActualizado.getSubtareas() != null) {
             eventoExistente.getSubtareas().clear();
@@ -194,6 +196,7 @@ public class EventoService {
         dto.setFocusMode(evento.isFocusMode());
         dto.setTiempoInvertidoFocus(evento.getTiempoInvertidoFocus());
         dto.setCompletado(evento.isCompletado());
+        dto.setNotaObtenida(evento.getNotaObtenida());
         dto.setRecursosUrls(evento.getRecursosUrls());
 
         if (evento.getAsignatura() != null) {
@@ -217,4 +220,12 @@ public class EventoService {
 
         return dto;
     }
+    @Transactional
+    public void actualizarNota(Long id, Double nota) {
+        Evento evento = eventoRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Evento no encontrado"));
+        evento.setNotaObtenida(nota);
+        eventoRepository.save(evento);
+    }
 }
+

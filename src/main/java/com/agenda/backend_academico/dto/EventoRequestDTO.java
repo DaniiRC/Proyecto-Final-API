@@ -23,6 +23,7 @@ public class EventoRequestDTO {
     private Integer dificultad;
     private Integer horasEstimadas;
     private boolean focusMode;
+    private Double notaObtenida;
     
     private List<String> recursosUrls;
     
@@ -61,6 +62,9 @@ public class EventoRequestDTO {
 
     public boolean isFocusMode() { return focusMode; }
     public void setFocusMode(boolean focusMode) { this.focusMode = focusMode; }
+
+    public Double getNotaObtenida() { return notaObtenida; }
+    public void setNotaObtenida(Double notaObtenida) { this.notaObtenida = notaObtenida; }
 
     public List<String> getRecursosUrls() { return recursosUrls; }
     public void setRecursosUrls(List<String> recursosUrls) { this.recursosUrls = recursosUrls; }

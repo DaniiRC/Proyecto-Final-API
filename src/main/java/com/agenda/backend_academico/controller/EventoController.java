@@ -144,4 +144,14 @@ public class EventoController {
             return ResponseEntity.notFound().build();
         }
     }
+    @CrossOrigin(origins = "*")
+    @PostMapping("/{id}/nota")
+    public ResponseEntity<?> actualizarNota(@PathVariable Long id, @RequestParam Double nota) {
+        try {
+            eventoService.actualizarNota(id, nota);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

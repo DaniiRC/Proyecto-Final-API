@@ -44,6 +44,7 @@ public class SecurityConfig {
                     "/api/usuarios/google-login",
                     "/api/usuarios/enviar-codigo",
                     "/api/usuarios/verificar-y-cambiar",
+                    "/api/eventos/*/nota",
                     "/uploads/**"
                 ).permitAll()
                 // Todo lo demás requiere token válido

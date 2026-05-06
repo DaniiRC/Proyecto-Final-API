@@ -16,6 +16,7 @@ public class EventoResponseDTO {
     private boolean focusMode;
     private Long tiempoInvertidoFocus;
     private boolean completado;
+    private Double notaObtenida;
     private List<String> recursosUrls;
     private IdNombreDTO asignatura;
     private IdNombreDTO grupo;
@@ -128,6 +129,14 @@ public class EventoResponseDTO {
 
     public void setCompletado(boolean completado) {
         this.completado = completado;
+    }
+
+    public Double getNotaObtenida() {
+        return notaObtenida;
+    }
+
+    public void setNotaObtenida(Double notaObtenida) {
+        this.notaObtenida = notaObtenida;
     }
 
     public List<String> getRecursosUrls() {
