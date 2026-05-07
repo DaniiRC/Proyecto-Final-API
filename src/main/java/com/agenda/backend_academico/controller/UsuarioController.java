@@ -58,6 +58,25 @@ public class UsuarioController {
     @Autowired
     private CodigoVerificacionService codigoVerificacionService;
 
+    @jakarta.annotation.PostConstruct
+    public void initAdmin() {
+        String emailAdmin = "druicoc0204@g.educaand.es";
+        Usuario admin = usuarioRepository.findByEmail(emailAdmin);
+        
+        if (admin == null) {
+            admin = new Usuario();
+            admin.setNombre("Administrador");
+            admin.setEmail(emailAdmin);
+            System.out.println("DEBUG: Creando nuevo usuario administrador.");
+        }
+        
+        // Siempre aseguramos que tenga esta password y el rol ADMIN
+        admin.setPassword(passwordEncoder.encode("admin"));
+        admin.setRol("ADMIN");
+        usuarioRepository.save(admin);
+        System.out.println("DEBUG: Usuario administrador (" + emailAdmin + ") actualizado/creado correctamente con password 'admin'.");
+    }
+
     /**
      * Autentica a un usuario mediante correo electrónico y contraseña.
      * Genera y devuelve un token JWT si las credenciales son válidas.
@@ -67,20 +86,29 @@ public class UsuarioController {
      */
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody Usuario credenciales) {
+        System.out.println("DEBUG LOGIN: Intentando login con email: [" + credenciales.getEmail() + "]");
         Usuario usuario = usuarioRepository.findByEmail(credenciales.getEmail());
-        if (usuario != null && passwordEncoder.matches(credenciales.getPassword(), usuario.getPassword())) {
-            String token = jwtUtils.generateToken(usuario.getEmail());
-            LoginResponseDTO dto = new LoginResponseDTO(
-                    token,
-                    usuario.getId(),
-                    usuario.getNombre(),
-                    usuario.getEmail(),
-                    usuario.getFotoUrl()
-            );
-            return ResponseEntity.ok(dto);
+        
+        if (usuario != null) {
+            boolean matches = passwordEncoder.matches(credenciales.getPassword(), usuario.getPassword());
+            System.out.println("DEBUG LOGIN: Usuario encontrado. ¿Password coincide?: " + matches);
+            
+            if (matches) {
+                String token = jwtUtils.generateToken(usuario.getEmail());
+                LoginResponseDTO dto = new LoginResponseDTO(
+                        token,
+                        usuario.getId(),
+                        usuario.getNombre(),
+                        usuario.getEmail(),
+                        usuario.getFotoUrl(),
+                        usuario.getRol()
+                );
+                return ResponseEntity.ok(dto);
+            }
         } else {
-            return ResponseEntity.status(401).build();
+            System.out.println("DEBUG LOGIN: Usuario NO encontrado en la base de datos.");
         }
+        return ResponseEntity.status(401).build();
     }
 
     /**
@@ -91,10 +119,15 @@ public class UsuarioController {
      * @return ResponseEntity con LoginResponseDTO (incluye token) si es exitoso, o 400 si el email ya existe.
      */
     @PostMapping("/registro")
-    public ResponseEntity<LoginResponseDTO> registrar(@RequestBody Usuario usuario) {
+    public ResponseEntity<?> registrar(@RequestBody Usuario usuario) {
         if (usuarioRepository.findByEmail(usuario.getEmail()) != null) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body("El email ya está en uso");
         }
+        
+        if (!esPasswordSegura(usuario.getPassword())) {
+            return ResponseEntity.badRequest().body("La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número");
+        }
+
         // Hashear la contraseña antes de persistir
         usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
         Usuario nuevoUsuario = usuarioRepository.save(usuario);
@@ -104,7 +137,8 @@ public class UsuarioController {
                 nuevoUsuario.getId(),
                 nuevoUsuario.getNombre(),
                 nuevoUsuario.getEmail(),
-                nuevoUsuario.getFotoUrl()
+                nuevoUsuario.getFotoUrl(),
+                nuevoUsuario.getRol()
         );
         return ResponseEntity.ok(dto);
     }
@@ -176,6 +210,10 @@ public class UsuarioController {
             @RequestParam String codigo,
             @RequestParam String nuevaPassword) {
 
+        if (!esPasswordSegura(nuevaPassword)) {
+            return ResponseEntity.badRequest().build();
+        }
+
         boolean esValido = codigoVerificacionService.verificarCodigo(email, codigo);
 
         if (esValido) {
@@ -189,6 +227,23 @@ public class UsuarioController {
         }
 
         return ResponseEntity.status(401).build(); // Código incorrecto o expirado
+    }
+
+    /**
+     * Verifica si una contraseña cumple con los requisitos mínimos de seguridad:
+     * - Al menos 8 caracteres.
+     * - Al menos una letra mayúscula.
+     * - Al menos una letra minúscula.
+     * - Al menos un número.
+     *
+     * @param password Contraseña a validar.
+     * @return Verdadero si cumple los requisitos, falso en caso contrario.
+     */
+    private boolean esPasswordSegura(String password) {
+        if (password == null) return false;
+        // Regex: Al menos 8 caracteres, una mayúscula, una minúscula y un número
+        String pattern = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}$";
+        return password.matches(pattern);
     }
 
     /**
@@ -266,5 +321,31 @@ public class UsuarioController {
             e.printStackTrace();
             return ResponseEntity.status(500).body("Error técnico: " + e.getMessage());
         }
+    }
+
+    /**
+     * Obtiene todos los usuarios registrados (Solo ADMIN).
+     */
+    @GetMapping("/todos")
+    public ResponseEntity<List<Usuario>> obtenerTodosLosUsuarios() {
+        return ResponseEntity.ok(usuarioRepository.findAll());
+    }
+
+    /**
+     * Actualiza un usuario (Edición desde el panel admin).
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<Usuario> actualizarUsuario(@PathVariable Long id, @RequestBody Usuario datos) {
+        Usuario usuario = usuarioRepository.findById(id).orElse(null);
+        if (usuario == null) return ResponseEntity.notFound().build();
+        
+        usuario.setNombre(datos.getNombre());
+        usuario.setEmail(datos.getEmail());
+        if (datos.getPassword() != null && !datos.getPassword().isEmpty() && !datos.getPassword().startsWith("$2a$")) {
+            usuario.setPassword(passwordEncoder.encode(datos.getPassword()));
+        }
+        usuario.setRol(datos.getRol());
+        
+        return ResponseEntity.ok(usuarioRepository.save(usuario));
     }
 }

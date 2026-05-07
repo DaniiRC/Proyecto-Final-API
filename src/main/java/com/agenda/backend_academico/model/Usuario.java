@@ -21,6 +21,8 @@ public class Usuario {
 	private String password;
 
 	private String fotoUrl;
+	
+	private String rol = "USER"; // "USER" o "ADMIN"
 
 	// --- RELACIÓN COMO ALUMNO (NUEVO) ---
 	// Un alumno puede estar en muchos grupos, y un grupo tiene muchos alumnos.
@@ -77,6 +79,14 @@ public class Usuario {
 
 	public void setFotoUrl(String fotoUrl) {
 		this.fotoUrl = fotoUrl;
+	}
+
+	public String getRol() {
+		return rol;
+	}
+
+	public void setRol(String rol) {
+		this.rol = rol;
 	}
 
 	public List<Grupo> getGruposParticipados() {
