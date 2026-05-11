@@ -67,14 +67,20 @@ public class UsuarioController {
             admin = new Usuario();
             admin.setNombre("Administrador");
             admin.setEmail(emailAdmin);
-            System.out.println("DEBUG: Creando nuevo usuario administrador.");
+            // Solo establecemos la contraseña inicial si es un usuario nuevo
+            // "Admin123" cumple con los requisitos: 8 caracteres, mayúscula, minúscula y número
+            admin.setPassword(passwordEncoder.encode("Admin123"));
+            admin.setRol("ADMIN");
+            usuarioRepository.save(admin);
+            System.out.println("DEBUG: Usuario administrador (" + emailAdmin + ") creado correctamente con password 'Admin123'.");
+        } else {
+            // Si ya existe, nos aseguramos de que mantenga el rol ADMIN pero NO sobreescribimos su password
+            if (!"ADMIN".equals(admin.getRol())) {
+                admin.setRol("ADMIN");
+                usuarioRepository.save(admin);
+                System.out.println("DEBUG: Rol ADMIN restaurado para " + emailAdmin);
+            }
         }
-        
-        // Siempre aseguramos que tenga esta password y el rol ADMIN
-        admin.setPassword(passwordEncoder.encode("admin"));
-        admin.setRol("ADMIN");
-        usuarioRepository.save(admin);
-        System.out.println("DEBUG: Usuario administrador (" + emailAdmin + ") actualizado/creado correctamente con password 'admin'.");
     }
 
     /**
