@@ -185,7 +185,7 @@ public class UsuarioController {
                 String codigo = codigoVerificacionService.guardarCodigo(email);
 
                 SimpleMailMessage message = new SimpleMailMessage();
-                message.setFrom("ruizcocera.daniel@loscerros.org");
+                message.setFrom("danielruizcocera04@gmail.com");
                 message.setTo(email);
                 message.setSubject("!!! ATENCIÓN: CÓDIGO DE SEGURIDAD !!!");
                 message.setText("Hola " + usuario.getNombre() + ",\n\n" +
