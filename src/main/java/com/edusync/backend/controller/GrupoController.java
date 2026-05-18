@@ -162,4 +162,17 @@ public class GrupoController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    /**
+     * Obtiene la lista de usuarios (participantes) de un grupo por su ID.
+     */
+    @GetMapping("/{id}/participantes")
+    public ResponseEntity<List<com.edusync.backend.dto.UsuarioResponseDTO>> obtenerParticipantesPorId(@PathVariable Long id) {
+        try {
+            GrupoResponseDTO grupo = grupoService.obtenerPorId(id);
+            return ResponseEntity.ok(grupo.getAlumnos());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }
