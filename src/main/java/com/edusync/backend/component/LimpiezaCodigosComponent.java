@@ -8,13 +8,20 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
+/**
+ * Componente programado para la administración automática del sistema.
+ * Se encarga de purgar periódicamente códigos de verificación obsoletos de la base de datos.
+ */
 @Component
 public class LimpiezaCodigosComponent {
 
     @Autowired
     private CodigoVerificacionRepository codigoVerificacionRepository;
 
-    // Ejecutar cada hora: "0 0 * * * *"
+    /**
+     * Tarea programada (Scheduler) que se ejecuta al inicio de cada hora.
+     * Elimina todos los registros de códigos de verificación OTP con más de una hora de antigüedad.
+     */
     @Scheduled(cron = "0 0 * * * *")
     @Transactional
     public void limpiarCodigosAntiguos() {

@@ -7,6 +7,10 @@ import org.springframework.stereotype.Component;
 import java.security.Key;
 import java.util.Date;
 
+/**
+ * Utilidades para la gestión de tokens JSON Web Tokens (JWT).
+ * Proporciona métodos para la generación, extracción de información y validación de tokens de seguridad.
+ */
 @Component
 public class JwtUtils {
 
@@ -17,11 +21,22 @@ public class JwtUtils {
 
     private static final long EXPIRATION_MS = 7L * 24 * 60 * 60 * 1000; // 7 días
 
+    /**
+     * Obtiene la clave de firma HMAC basada en la cadena secreta codificada.
+     *
+     * @return Objeto Key para firmar y validar tokens.
+     */
     private Key getSigningKey() {
         return Keys.hmacShaKeyFor(SECRET.getBytes());
     }
 
-    /** Genera un token JWT firmado con el email del usuario como 'subject'. */
+    /**
+     * Genera un token JWT firmado codificando el email del usuario como identificador (subject)
+     * y configurando la fecha de emisión y de expiración.
+     *
+     * @param email Correo electrónico del usuario.
+     * @return Cadena compacta que representa el token firmado.
+     */
     public String generateToken(String email) {
         Date now    = new Date();
         Date expiry = new Date(now.getTime() + EXPIRATION_MS);
@@ -34,7 +49,12 @@ public class JwtUtils {
                 .compact();
     }
 
-    /** Devuelve el email (subject) embebido en el token. */
+    /**
+     * Extrae el correo electrónico (subject) contenido dentro de los claims del token JWT.
+     *
+     * @param token Cadena del token de seguridad.
+     * @return El correo electrónico del usuario extraído.
+     */
     public String getEmailFromToken(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
@@ -44,7 +64,12 @@ public class JwtUtils {
                 .getSubject();
     }
 
-    /** Devuelve true si el token tiene firma válida y no ha expirado. */
+    /**
+     * Valida de manera segura que la firma del token sea correcta y no haya expirado.
+     *
+     * @param token Cadena del token a validar.
+     * @return true si el token es estructuralmente correcto y vigente; false de lo contrario.
+     */
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()

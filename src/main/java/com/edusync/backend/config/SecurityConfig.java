@@ -12,6 +12,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+/**
+ * Configuración central de la seguridad de la aplicación (Spring Security).
+ * Define políticas de estado, control de accesos por rutas (públicas y protegidas),
+ * encriptación de contraseñas mediante BCrypt y la inyección del filtro JWT personalizado.
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -19,12 +24,25 @@ public class SecurityConfig {
     @Autowired
     private JwtAuthFilter jwtAuthFilter;
 
-    /** Bean de BCrypt disponible en toda la aplicación. */
+    /**
+     * Define el bean del encriptador de contraseñas BCryptPasswordEncoder.
+     * Utilizado para codificar las claves de los usuarios de manera segura antes de guardarlas.
+     *
+     * @return Instancia del codificador de contraseñas.
+     */
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * Configura la cadena de filtros de seguridad HTTP, estableciendo qué endpoints son públicos
+     * y cuáles están protegidos tras tokens JWT, además de declarar el estado stateless.
+     *
+     * @param http Componente de configuración de seguridad de Spring.
+     * @return Filtro configurado para el motor de Spring Security.
+     * @throws Exception En caso de errores en la configuración interna de la cadena de filtros.
+     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
